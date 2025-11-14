@@ -68,6 +68,7 @@ def main():
         table_dbml += "}"
         dbml.append(table_dbml)
 
+    print("\n\n".join(dbml))
     with open(args.output, "w") as f:
         f.write("\n\n".join(dbml))
 
