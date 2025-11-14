@@ -36,7 +36,11 @@ def extract_schemas_from_python(tree: ast.Module) -> dict[str, dict[str, str]]:
             for target in node.targets:
                 if isinstance(target, ast.Name) and isinstance(node.value, ast.Dict):
                     # Extract Keys and Values as Strings
-                    keys = [k.value if isinstance(k, ast.Constant) else k.value for k in node.value.keys]
+                    try:
+                        keys = [k.value if isinstance(k, ast.Constant) else k.value for k in node.value.keys]
+                    except AttributeError:
+                        continue
+
                     values = []
                     for v in node.value.values:
                         if isinstance(v, ast.Constant):
@@ -69,8 +73,9 @@ def main():
         dbml.append(table_dbml)
 
     print("\n\n".join(dbml))
-    with open(args.output, "w") as f:
-        f.write("\n\n".join(dbml))
+    if args.output:
+        with open(args.output, "w") as f:
+            f.write("\n\n".join(dbml))
 
 
 if __name__ == "__main__":
