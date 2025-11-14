@@ -36,20 +36,41 @@ def extract_schemas_from_python(tree: ast.Module) -> dict[str, dict[str, str]]:
             for target in node.targets:
                 if isinstance(target, ast.Name) and isinstance(node.value, ast.Dict):
                     # Extract Keys and Values as Strings
-                    try:
-                        keys = [k.value if isinstance(k, ast.Constant) else k.value for k in node.value.keys]
-                    except AttributeError:
-                        continue
-
+                    keys = []
                     values = []
-                    for v in node.value.values:
-                        if isinstance(v, ast.Constant):
-                            values.append(str(v.value))
-                        elif isinstance(v, ast.Attribute):
-                            # Handles pl.Int64, pl.String, etc.
-                            values.append(f"{v.value.id}.{v.attr}")
-                    schemas[target.id] = dict(zip(keys, values))
-    return schemas
+                    for k, v in zip(node.value.keys, node.value.values):
+                        if k is None and isinstance(v, ast.Name):
+                            # This is a dict unpack (**other_schema)
+                            keys.append(None)
+                            values.append(v.id)
+                        else:
+                            if isinstance(k, ast.Constant):
+                                keys.append(k.value)
+                            else:
+                                keys.append(str(k))
+
+                            if isinstance(v, ast.Constant):
+                                values.append(str(v.value))
+                            elif isinstance(v, ast.Attribute):
+                                # Handles pl.Int64, pl.String, etc.
+                                values.append(f"{v.value.id}.{v.attr}")
+                            else:
+                                values.append(str(v))
+                    schemas[target.id] = (keys, values)
+
+    resolved_schemas = {}
+    for name, (keys, values) in schemas.items():
+        schema = {}
+        for k, v in zip(keys, values):
+            if k is None:
+                # Unpack referenced schema
+                ref_schema = resolved_schemas.get(v)
+                if ref_schema:
+                    schema.update(ref_schema)
+            else:
+                schema[k] = v
+        resolved_schemas[name] = schema
+    return resolved_schemas
 
 
 def main():
