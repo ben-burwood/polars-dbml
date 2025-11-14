@@ -1,0 +1,13 @@
+[project]
+name = "polars-dbml"
+version = "0.1"
+description = "Polars Schema to DBML Converter"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[project.scripts]
+polars-dbml = "main:main"
+
+[tool.ruff]
+line-length = 150
